@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard de Ventas · Vista 2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0b1220; --card:#121a2b; --text:#eef2fb; --muted:#8b96ad; --border:#22304a;
+    --accent:#5eead4;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  :root[data-theme="light"]{
+    --bg:#f2f4f8; --card:#ffffff; --text:#101828; --muted:#667085; --border:#e4e8ee;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;}
+  header{padding:24px 24px 4px;text-align:center;}
+  h1{margin:0;font-size:1.6rem;letter-spacing:.02em;}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:4px;}
+  .band{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;padding:20px 24px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 22px;min-width:150px;text-align:center;}
+  .stat .n{font-size:1.5rem;font-weight:700;color:var(--accent);}
+  .stat .l{color:var(--muted);font-size:.75rem;text-transform:uppercase;margin-top:4px;}
+  .layout{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;padding:8px 24px 28px;}
+  @media (max-width:800px){.layout{grid-template-columns:1fr;}}
+  .col{display:flex;flex-direction:column;gap:16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;}
+  .card h2{margin:0 0 12px;font-size:.95rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;}
+  th,td{padding:6px 4px;text-align:left;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  canvas{max-width:100%;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dashboard de Ventas</h1>
+  <div class="sub">Vista alternativa · resumen ejecutivo</div>
+</header>
+
+<div class="band" id="band"></div>
+
+<div class="layout">
+  <div class="col">
+    <div class="card"><h2>Ranking de vendedores</h2><canvas id="chVendedor" height="180"></canvas></div>
+    <div class="card"><h2>Top 10 productos</h2><canvas id="chProducto" height="220"></canvas></div>
+  </div>
+  <div class="col">
+    <div class="card"><h2>Distribución por categoría</h2><canvas id="chCategoria" height="200"></canvas></div>
+    <div class="card"><h2>Ventas por región</h2><canvas id="chRegion" height="180"></canvas></div>
+    <div class="card">
+      <h2>Detalle por región</h2>
+      <table id="tblRegion"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = n => '$' + n.toLocaleString('es-MX');
+
+const vendedor = {'Ana Martínez':159100,'Carlos López':40650,'Javier Hernández':80900,'Luis Fernández':274550,'María Rodríguez':184000,'Sofía Gómez':45870};
+const region = {Centro:183050, Este:137800, Norte:250940, Oeste:115500, Sur:97780};
+const producto = {
+  'Mouse Inalámbrico':329000,'Teclado Mecánico':111000,'Laptop Pro 15':52500,'Audífonos Noise-Canceling':58000,
+  'Archivador Metálico':36000,'Estante de Libros':43000,'Monitor 27 inch':26000,'Cuadernos Universitarios':26470,
+  'Escritorio Ajustable':25700,'Tablet 10 inch':22000
+};
+const categoria = {Tecnología:598500, Mobiliario:115200, Papelería:71370};
+const total = 785070;
+
+const teal='#5eead4', blue='#60a5fa', amber='#fbbf24', coral='#fb7185', violet='#a78bfa';
+const palette=[teal,blue,amber,coral,violet,'#34d399'];
+
+document.getElementById('band').innerHTML = [
+  ['Ventas totales', fmt(total)],
+  ['Vendedores activos', Object.keys(vendedor).length],
+  ['Regiones', Object.keys(region).length],
+  ['Productos distintos', Object.keys(producto).length+' (top)'],
+  ['Categoría líder', Object.entries(categoria).sort((a,b)=>b[1]-a[1])[0][0]]
+].map(([l,n])=>`<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+
+document.getElementById('tblRegion').innerHTML =
+  '<tr><th>Región</th><th class="num">Ventas</th><th class="num">% del total</th></tr>' +
+  Object.entries(region).sort((a,b)=>b[1]-a[1]).map(([r,v])=>
+    `<tr><td>${r}</td><td class="num">${fmt(v)}</td><td class="num">${(v/total*100).toFixed(1)}%</td></tr>`
+  ).join('');
+
+Chart.defaults.color = '#8b96ad';
+Chart.defaults.font.family = 'Arial';
+
+new Chart(document.getElementById('chVendedor'), {
+  type:'bar',
+  data:{labels:Object.keys(vendedor), datasets:[{data:Object.values(vendedor), backgroundColor:blue, borderRadius:8}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}}
+});
+new Chart(document.getElementById('chProducto'), {
+  type:'bar',
+  data:{labels:Object.keys(producto), datasets:[{data:Object.values(producto), backgroundColor:teal, borderRadius:8}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}}
+});
+new Chart(document.getElementById('chCategoria'), {
+  type:'polarArea',
+  data:{labels:Object.keys(categoria), datasets:[{data:Object.values(categoria), backgroundColor:palette}]},
+  options:{plugins:{legend:{position:'bottom'}}}
+});
+new Chart(document.getElementById('chRegion'), {
+  type:'line',
+  data:{labels:Object.keys(region), datasets:[{data:Object.values(region), borderColor:amber, backgroundColor:'rgba(251,191,36,.2)', fill:true, tension:.35, pointRadius:4}]},
+  options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+});
+</script>
+</body>
+</html>
